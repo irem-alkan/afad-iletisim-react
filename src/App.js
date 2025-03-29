@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-// Sunucunun çalıştığı IP ve port
+// Sunucunun çalıştığı IP ve port (senin IP'n)
 const socket = io("http://192.168.1.72:3000");
 
 function App() {
@@ -9,41 +9,60 @@ function App() {
     const [oda, setOda] = useState("mahalle-1");
     const [mesaj, setMesaj] = useState("");
     const [mesajlar, setMesajlar] = useState([]);
+    const [katildi, setKatildi] = useState(false); // Odaya katılım durumu
 
     useEffect(() => {
+        if (!katildi) return;
+
         // Odaya katıl
         socket.emit("oda_katil", oda);
 
-        // Gelen mesajları dinle
+        // Mesaj alma
         socket.on("mesaj_al", (data) => {
             setMesajlar((prev) => [...prev, `${data.kullanici}: ${data.mesaj}`]);
         });
 
-        // Sistem mesajlarını dinle
-        socket.on("sistem_mesaji", (msg) => {
-            setMesajlar((prev) => [...prev, `🔔 ${msg}`]);
-        });
-
-        // Konum bilgisi al
+        // Konum alma
         socket.on("konum_al", (konum) => {
             alert(`📍 Konum alındı: Enlem ${konum.enlem}, Boylam ${konum.boylam}`);
         });
 
-        // Temizlik
+        // Sistem mesajı
+        socket.on("sistem_mesaji", (msg) => {
+            setMesajlar((prev) => [...prev, `🔔 ${msg}`]);
+        });
+
         return () => {
             socket.off("mesaj_al");
             socket.off("konum_al");
             socket.off("sistem_mesaji");
         };
-    }, [oda]);
+    }, [katildi, oda]);
+
+    const odayaKatil = () => {
+        if (!oda.trim()) {
+            alert("Lütfen bir oda adı girin.");
+            return;
+        }
+        socket.emit("oda_katil", oda);
+        setKatildi(true);
+    };
 
     const mesajGonder = () => {
+        if (!katildi) {
+            alert("Lütfen önce odaya katılın.");
+            return;
+        }
         if (!mesaj.trim()) return;
         socket.emit("mesaj_gonder", { kullanici, mesaj, oda });
         setMesaj("");
     };
 
     const konumGonder = () => {
+        if (!katildi) {
+            alert("Lütfen önce odaya katılın.");
+            return;
+        }
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
                 const konum = {
@@ -74,8 +93,9 @@ function App() {
                     placeholder="Oda Adı"
                     value={oda}
                     onChange={(e) => setOda(e.target.value)}
-                    style={{ padding: "8px" }}
+                    style={{ padding: "8px", marginRight: "10px" }}
                 />
+                <button onClick={odayaKatil}>Odaya Katıl</button>
             </div>
 
             <div style={{ marginTop: "15px" }}>

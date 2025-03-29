@@ -1,41 +1,62 @@
 ﻿const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io"); 
 const cors = require("cors");
 
 const app = express();
-const server = http.createServer(app);
+app.use(cors()); 
 
-const io = socketIo(server, {
+const server = http.createServer(app);
+const io = new Server(server, {
     cors: {
-        origin: "*",
+        origin: "*", 
         methods: ["GET", "POST"]
-    },
+    }
 });
+
 
 app.get("/", (req, res) => {
-    res.send("AFAD Sunucusu çalışıyor!");
+    res.send("📡 AFAD Sunucusu çalışıyor!");
 });
 
+
 io.on("connection", (socket) => {
-    console.log(`✅ Yeni bağlantı: ${socket.id}`);
+    console.log(`✅ Bağlandı: ${socket.id}`);
 
+    
+    socket.on("oda_katil", (odaAdi) => {
+        socket.join(odaAdi);
+        console.log(`🚪 ${socket.id}, '${odaAdi}' odasına katıldı`);
+        io.to(odaAdi).emit("sistem_mesaji", `🔔 ${socket.id} odaya katıldı`);
+    });
+
+    
     socket.on("mesaj_gonder", (data) => {
-        console.log("📨 Mesaj:", data);
-        io.emit("mesaj_al", data);
+        console.log(`💬 Mesaj | Oda: ${data.oda} | ${data.kullanici}: ${data.mesaj}`);
+        if (data.oda) {
+            io.to(data.oda).emit("mesaj_al", data);
+        } else {
+            io.emit("mesaj_al", data);
+        }
     });
 
+    
     socket.on("konum_gonder", (konum) => {
-        console.log("📍 Konum:", konum);
-        io.emit("konum_al", konum);
+        console.log(`📍 Konum | Oda: ${konum.oda} | Enlem: ${konum.enlem}, Boylam: ${konum.boylam}`);
+        if (konum.oda) {
+            io.to(konum.oda).emit("konum_al", konum);
+        } else {
+            io.emit("konum_al", konum);
+        }
     });
 
+    
     socket.on("disconnect", () => {
-        console.log(`❌ Bağlantı koptu: ${socket.id}`);
+        console.log(`❌ Ayrıldı: ${socket.id}`);
     });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda çalışıyor...`);
+    console.log(`🚀 AFAD Sunucusu ${PORT} portunda çalışıyor...`);
 });
