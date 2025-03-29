@@ -1,12 +1,12 @@
 ﻿import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-// IP adresini kendi cihazına göre değiştir
+// Sunucunun çalıştığı IP ve port
 const socket = io("http://192.168.1.72:3000");
 
 function App() {
     const [kullanici, setKullanici] = useState("AFAD Kullanıcı");
-    const [oda, setOda] = useState("mahalle-1"); // Varsayılan oda
+    const [oda, setOda] = useState("mahalle-1");
     const [mesaj, setMesaj] = useState("");
     const [mesajlar, setMesajlar] = useState([]);
 
@@ -14,21 +14,22 @@ function App() {
         // Odaya katıl
         socket.emit("oda_katil", oda);
 
-        // Mesajları dinle
+        // Gelen mesajları dinle
         socket.on("mesaj_al", (data) => {
             setMesajlar((prev) => [...prev, `${data.kullanici}: ${data.mesaj}`]);
         });
 
-        // Konum geldiğinde göster
-        socket.on("konum_al", (konum) => {
-            alert(`📍 Konum alındı: Enlem ${konum.enlem}, Boylam ${konum.boylam}`);
-        });
-
-        // Sistem mesajı (örnek: odaya giriş)
+        // Sistem mesajlarını dinle
         socket.on("sistem_mesaji", (msg) => {
             setMesajlar((prev) => [...prev, `🔔 ${msg}`]);
         });
 
+        // Konum bilgisi al
+        socket.on("konum_al", (konum) => {
+            alert(`📍 Konum alındı: Enlem ${konum.enlem}, Boylam ${konum.boylam}`);
+        });
+
+        // Temizlik
         return () => {
             socket.off("mesaj_al");
             socket.off("konum_al");
