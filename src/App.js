@@ -1,7 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-// Sunucunun çalıştığı IP ve port (senin IP'n)
 const socket = io("http://192.168.1.72:3000");
 
 function App() {
@@ -14,20 +13,16 @@ function App() {
     useEffect(() => {
         if (!katildi) return;
 
-        // Odaya katıl
         socket.emit("oda_katil", oda);
-
-        // Mesaj alma
+        
         socket.on("mesaj_al", (data) => {
             setMesajlar((prev) => [...prev, `${data.kullanici}: ${data.mesaj}`]);
         });
-
-        // Konum alma
+     
         socket.on("konum_al", (konum) => {
             alert(`📍 Konum alındı: Enlem ${konum.enlem}, Boylam ${konum.boylam}`);
         });
-
-        // Sistem mesajı
+      
         socket.on("sistem_mesaji", (msg) => {
             setMesajlar((prev) => [...prev, `🔔 ${msg}`]);
         });
